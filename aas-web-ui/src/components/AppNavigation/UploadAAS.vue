@@ -28,9 +28,12 @@
                         >
                     </template>
                 </v-file-input>
+                <v-list-subheader>Options</v-list-subheader>
+                <v-checkbox v-model="ignoreDuplicates" label="Ignore Duplicates" hide-details></v-checkbox>
                 <v-checkbox
                     v-model="registerAAS"
-                    label="Register AAS (Don't use when BaSyx is the Backend!)"></v-checkbox>
+                    label="Register AAS (Don't use when BaSyx is the Backend!)"
+                    hide-details></v-checkbox>
             </v-card-text>
         </v-card>
     </v-dialog>
@@ -38,10 +41,10 @@
 
 <script lang="ts" setup>
     import { computed, ref, watch, watchEffect } from 'vue';
+    import { useSMHandling } from '@/composables/AAS/SMHandling';
     import { useAASRegistryClient } from '@/composables/Client/AASRegistryClient';
     import { useAASRepositoryClient } from '@/composables/Client/AASRepositoryClient';
     import { useSMRegistryClient } from '@/composables/Client/SMRegistryClient';
-    import { useSMRepositoryClient } from '@/composables/Client/SMRepositoryClient';
     import { useNavigationStore } from '@/store/NavigationStore';
     import { Endpoint, ProtocolInformation, SubmodelDescriptor } from '@/types/Descriptors';
     import { base64Encode } from '@/utils/EncodeDecodeUtils';
@@ -53,7 +56,7 @@
 
     // Composables
     const { fetchAas, uploadAas } = useAASRepositoryClient();
-    const { fetchSm } = useSMRepositoryClient();
+    const { fetchSm } = useSMHandling();
     const { postAasDescriptor, createDescriptorFromAAS } = useAASRegistryClient();
     const { postSubmodelDescriptor, createDescriptorFromSubmodel } = useSMRegistryClient();
 
@@ -68,6 +71,7 @@
     const uploadAASDialog = ref(false);
     const aasFile = ref(null as File | null);
     const loadingUpload = ref(false);
+    const ignoreDuplicates = ref(true);
     const registerAAS = ref(false);
 
     watch(
@@ -90,7 +94,7 @@
         loadingUpload.value = true;
 
         try {
-            let response = await uploadAas(aasFile.value);
+            let response = await uploadAas(aasFile.value, ignoreDuplicates.value);
 
             if (registerAAS.value) {
                 for (const aasId of response.data.aasIds) {
